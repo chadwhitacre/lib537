@@ -44,8 +44,8 @@ Our implementation uses a thread in the child process (started when the module
 is imported) to monitor all library source files. Your program is responsible
 for periodically calling \code{should_restart}, exiting with code 75 whenever it
 returns \class{True} (presumably after cleanly shutting down). Exit code 75
-seemed appropriate to use because of its meaning on \UNIX{} systems (from
-\file{/usr/include/sysexits.h}, FreeBSD 6.1-RELEASE):
+seemed appropriate to use because of its meaning on \UNIX{} systems. From
+FreeBSD 6.1-RELEASE, \file{/usr/include/sysexits.h}:
 
 \begin{verbatim}
 EX_TEMPFAIL -- temporary failure, indicating something that
