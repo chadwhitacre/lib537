@@ -1,0 +1,85 @@
+\section{\module{restarter} ---
+         Automatically restart your program when module files change}
+
+\declaremodule{lib537}{restarter}
+\modulesynopsis{Automatically restart when module files change.}
+
+
+This module solves the problem of refreshing Python modules in memory when the
+source files change, without manually restarting the program. There are two
+basic ways to solve this problem:
+
+\begin{enumerate}
+
+\item{\textbf{Reload modules within a single process.} The basic trick is to
+delete items from \module{sys.modules}, forcing a refresh the next time they are
+loaded. This gets tough because imported modules depend on each other. Look at
+Zope and RollbackImporter for two implementations.}
+
+\item{\textbf{Maintain two processes.} In this solution, a parent process
+continuously restarts a child process. This gets around module import
+dependencies, but the downside is that you loose any program state on restart,
+and it magnifies the shutdown/start-up time of your program.}
+
+\end{enumerate}
+
+This module implements the second solution.
+
+\subsection{Members}
+
+\module{restarter} provides the following members:
+
+\begin{datadesc}{CHILD, PARENT} These are booleans indicating whether the
+current process is the parent or child. \end{datadesc}
+
+\begin{funcdesc}{launch_child}{} Continuously relaunch the current program in a
+sub-process until the exit code is something other than 75. \end{funcdesc}
+
+\begin{funcdesc}{should_restart}{} Return a boolean indicating whether the child
+process should be restarted. If called in the parent process, it always returns
+\class{False}. \end{funcdesc}
+
+
+Our implementation uses a thread in the child process (started when the module
+is imported) to monitor all library source files. Your program is responsible
+for periodically calling mods_changed, exiting with code 75 whenever it returns
+\class{True} (presumably after cleanly shutting down). Exit code 75 seemed
+appropriate to use because of its meaning on \UNIX{} systems (from
+\file{/usr/include/sysexits.h}, FreeBSD 6.1-RELEASE):
+
+\begin{verbatim}
+EX_TEMPFAIL -- temporary failure, indicating something that
+*              is not really an error.  In sendmail, this means
+*              that a mailer (e.g.) could not create a connection,
+*              and the request should be reattempted later.
+[...]
+#define EX_TEMPFAIL     75      /* temp failure; user is invited to retry */
+\end{verbatim}
+
+This module requires the \module{subprocess} module. Included in the standard
+library since Python 2.4, it can also be found here:
+
+\begin{verbatim}
+http://www.lysator.liu.se/~astrand/popen5/
+\end{verbatim}
+
+
+\subsection{Example \label{example}}
+
+Here is an example:
+
+\begin{verbatim}
+import restarter
+
+def main():
+    while 1:
+        # program logic here
+        if restarter.should_restart():
+            # shutdown code here
+            raise SystemExit(75)
+
+if restarter.PARENT:
+    restarter.launch_child()
+else:
+    main()
+\end{verbatim}

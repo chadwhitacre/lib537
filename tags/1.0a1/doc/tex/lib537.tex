@@ -1,0 +1,54 @@
+% Complete documentation on the extended LaTeX markup used for Python
+% documentation is available in ``Documenting Python'', which is part
+% of the standard documentation for Python.  It may be found online
+% at:
+%
+%     http://www.python.org/doc/current/doc/doc.html
+
+\documentclass{manual}
+
+\title{lib537}
+
+\author{Chad W. L. Whitacre}
+
+% Please at least include a long-lived email address;
+% the rest is at your discretion.
+\authoraddress{
+	Zeta Design \&\ Development \\
+	\url{http://www.zetadev.com/software/lib537/} \\
+	Email: \email{\ulink{chad@zetaweb.com}{mailto:chad@zetaweb.com}}
+}
+
+\date{~~DATE~~} % update before release!
+%\date\today
+				% Use an explicit date so that reformatting
+				% doesn't cause a new date to be used.  Setting
+				% the date to \today can be used during draft
+				% stages to make it easier to handle versions.
+
+\release{~~VERSION~~}   % release version; this is used to define the
+				        % \version macro
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+
+\noindent
+lib537 is a Python library.
+
+\end{abstract}
+
+\input{installation}
+
+\chapter{Library Reference Manual}
+\label{manual}
+
+\input{httpy}
+\input{mode}
+\input{restarter}
+
+\input{legal}
+
+\end{document}
