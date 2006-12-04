@@ -23,9 +23,12 @@ setup( name = 'lib537'
      , long_description = """\
 lib537 is a Python library bundling the following modules:
 
-  httpy -- smooth over WSGI's worst warts
-  mode -- manage the application life-cycle from debugging to production
-  restarter -- automatically restart your program when module files change
+- **httpy**: Smooth over WSGI's worst warts
+
+- **mode**: Manage the application life-cycle from debugging to production
+
+- **restarter**: Automatically restart your program when module files change
+
 """
      , author = 'Chad Whitacre'
      , author_email = 'chad@zetaweb.com'
