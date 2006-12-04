@@ -1,0 +1,92 @@
+\section{\module{mode} ---
+         Manage the application life-cycle}
+
+\declaremodule{lib537}{mode}
+\modulesynopsis{Manage the application life-cycle, from debugging to
+production.}
+
+
+It is often valuable to maintain a distinction between various phases of an
+application's lifecycle. The \module{mode} module calls these phases
+\dfn{modes}, and identifies four of them, given here in conceptual life-cycle
+order:
+
+\begin{tableii}{l|l}{code}{Mode}{Description}
+\lineii{debugging}{The application is being actively debugged; exceptions may
+    trigger an interactive debugger.}
+\lineii{development}{The application is being actively developed; however,
+    exceptions should not trigger interactive debugging.}
+\lineii{staging}{The application is deployed in a mock-production
+    environment.}
+\lineii{production}{The application is in live use by its end users.}
+\end{tableii}
+
+
+The expectation is that various aspects of the application---logging, exception
+handling, data sourcing---will adapt to the current mode. The mode is set in the
+\envvar{PYTHONMODE} environment variable. This module provides API for
+interacting with this variable. If \envvar{PYTHONMODE} is unset, it will be set
+to \code{development} when this module is imported.
+
+\subsection{Members}
+
+The module defines the following functions:
+
+\begin{funcdesc}{get}{}
+Return the current \envvar{PYTHONMODE} setting as a lowercase string; will raise
+\exception  {EnvironmentError} if the (case-insensitive) setting is not one of
+\code{debugging}, \code{development}, \code{staging}, or \code{production}.
+\end{funcdesc}
+
+\begin{funcdesc}{set}{mode}
+Given a mode, set the PYTHONMODE environment variable and refresh the module's
+boolean members. If given a bad mode, \exception{ValueError} is raised.
+\end{funcdesc}
+
+\begin{funcdesc}{setAPI}{}
+Refresh the module's boolean members. Call this if you ever change
+\envvar{PYTHONPATH} directly in the \code{os.environ} mapping.
+\end{funcdesc}
+
+The module also defines a number of boolean attributes reflecting the current
+mode setting, including abbreviations and combinations. Uppercase versions of
+each of the following are also defined (e.g., \code{DEBUGGING}).
+
+\begin{datadesc}{debugging, deb}
+\class{True} if \envvar{PYTHONMODE} is set to \code{debugging}.
+\end{datadesc}
+\begin{datadesc}{development, dev}
+\class{True} if \envvar{PYTHONMODE} is set to \code{development}.
+\end{datadesc}
+\begin{datadesc}{staging, st}
+\class{True} if \envvar{PYTHONMODE} is set to \code{staging}.
+\end{datadesc}
+\begin{datadesc}{production, prod}
+\class{True} if \envvar{PYTHONMODE} is set to \code{production}.
+\end{datadesc}
+\begin{datadesc}{debugging_or_development, debdev, devdeb}
+\class{True} if \envvar{PYTHONMODE} is set to \code{debugging} or \code{development}.
+\end{datadesc}
+\begin{datadesc}{staging_or_production, stprod}
+\class{True} if \envvar{PYTHONMODE} is set to \code{staging} or \code{production}.
+\end{datadesc}
+
+
+\subsection{Example}
+
+Example usage:
+
+\begin{verbatim}
+>>> import mode
+>>> mode.set('development')     # can set the mode at runtime
+>>> mode.get()                  # and access the current mode
+'development'
+>>> mode.development            # module defines boolean constants
+True
+>>> mode.PRODUCTION             # uppercase versions are also defined
+False
+>>> mode.dev                    # as are abbreviations
+True
+>>> mode.DEBDEV, mode.stprod    # and combinations
+(True, False)
+\end{verbatim}

@@ -1,0 +1,7 @@
+========================================
+    ~~VERSION~~ -- ~~DATE~~
+========================================
+
+This is the first release of lib537. Two of the modules, httpy and mode, had
+previously been released separately. With the addition of the third module,
+restarter, I have decided to distribute these in a single library.
