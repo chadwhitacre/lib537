@@ -36,9 +36,9 @@ This module implements the second solution. It provides the following members:
 
 Our implementation uses a thread in the child process (started when the module
 is imported) to monitor all library source files. Your program is responsible
-for periodically calling mods_changed, exiting with code 75 whenever it returns
-True (presumably after cleanly shutting down). Exit code 75 seemed appropriate
-to use because of its meaning on Unix systems:
+for periodically calling should_restart, exiting with code 75 whenever it
+returns True (presumably after cleanly shutting down). Exit code 75 seemed
+appropriate to use because of its meaning on Unix systems:
 
     EX_TEMPFAIL -- temporary failure, indicating something that
     *              is not really an error.  In sendmail, this means
