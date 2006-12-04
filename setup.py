@@ -16,7 +16,7 @@ classifiers = [
    ]
 
 setup( name = 'lib537'
-     , version = '~~VERSION~~'
+     , version = '1.0a1'
      , package_dir = {'':'src'}
      , packages = ['lib537']
      , description = 'lib537 is a Python library.'
