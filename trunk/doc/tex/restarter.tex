@@ -1,13 +1,12 @@
 \section{\module{restarter} ---
-         Automatically restart your program when module files change}
+         Automatically restart your program when certain files change}
 
 \declaremodule{lib537}{restarter}
 \modulesynopsis{Automatically restart when module files change.}
 
 
-This module solves the problem of refreshing Python modules in memory when the
-source files change, without manually restarting the program. There are two
-basic ways to solve this problem:
+This module primarily solves the problem of refreshing modules in memory when
+the source files change. There are two basic ways to solve this problem:
 
 \begin{enumerate}
 
@@ -19,13 +18,18 @@ Zope and RollbackImporter for two implementations.}
 \item{\textbf{Maintain two processes.} In this solution, a parent process
 continuously restarts a child process. This gets around module import
 dependencies, but the downside is that you loose any program state on restart,
-and it magnifies the shutdown/start-up time of your program.}
+and it magnifies the shutdown/startup time of your program.}
 
 \end{enumerate}
 
-This module implements the second solution.
+This module implements the second solution, automatically tracking source files
+for all loaded modules, with the exception of those imported directly from a ZIP
+archive (via
+\ulink{\module{zipimport}}{http://docs.python.org/lib/module-zipimport.html}).
+This module can also track non-source files, such as configuration files.
 
-\subsection{Members}
+
+\subsection{Members}
 
 \module{restarter} provides the following members:
 
@@ -33,19 +37,26 @@ This module implements the second solution.
 current process is the parent or child. \end{datadesc}
 
 \begin{funcdesc}{launch_child}{} Continuously relaunch the current program in a
-sub-process until the exit code is something other than 75. \end{funcdesc}
+child process until the exit code is something other than 75. \end{funcdesc}
 
 \begin{funcdesc}{should_restart}{} Return a boolean indicating whether the child
 process should be restarted. If called in the parent process, it always returns
 \class{False}. \end{funcdesc}
 
+\begin{funcdesc}{track}{\var{filepath}} Add \var{filepath} to the list of
+non-source files to track. If the file is removed or has its modtime changed,
+the program will restart. \end{funcdesc}
+
+
+\subsection{Usage}
 
 Our implementation uses a thread in the child process (started when the module
-is imported) to monitor all library source files. Your program is responsible
-for periodically calling \code{should_restart}, exiting with code 75 whenever it
-returns \class{True} (presumably after cleanly shutting down). Exit code 75
-seemed appropriate to use because of its meaning on \UNIX{} systems. From
-FreeBSD 6.1-RELEASE, \file{/usr/include/sysexits.h}:
+is imported) to monitor all library source files as well as those added with
+\function{track}. Your program is responsible for periodically calling
+\code{should_restart}, exiting with code 75 whenever it returns \class{True}
+(presumably after cleanly shutting down). Exit code 75 seems appropriate because
+of its meaning on \UNIX{} systems. E.g., from FreeBSD 6.1-RELEASE,
+\file{/usr/include/sysexits.h}:
 
 \begin{verbatim}
 EX_TEMPFAIL -- temporary failure, indicating something that
@@ -56,6 +67,9 @@ EX_TEMPFAIL -- temporary failure, indicating something that
 #define EX_TEMPFAIL     75      /* temp failure; user is invited to retry */
 \end{verbatim}
 
+A modified file dependency is "not really an error," and the parent process is
+"invited to retry" launching the child program.
+
 This module requires the \module{subprocess} module. Included in the standard
 library since Python 2.4, it can also be found here:
 
@@ -64,14 +78,17 @@ http://www.lysator.liu.se/~astrand/popen5/
 \end{verbatim}
 
 
-\subsection{Example \label{example}}
+\subsection{Example}
 
 Here is an example:
 
 \begin{verbatim}
 import restarter
+import foo # your module; change to trigger reloading
 
 def main():
+    # startup code here
+    restarter.watch('foo.conf') # your conf file; change to trigger reloading
     while 1:
         # program logic here
         if restarter.should_restart():
