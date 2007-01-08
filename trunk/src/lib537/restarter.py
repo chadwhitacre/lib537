@@ -89,47 +89,65 @@ except ImportError:
     _HAVE_SUBPROCESS = False
 
 
-_FLAG = '_RESTARTER_CHILD_FLAG'
-CHILD = _FLAG in os.environ
-PARENT = not CHILD
-EX_TEMPFAIL = 75
+_FILES = []                         # non-module files to watch
+_FLAG = '_RESTARTER_CHILD_FLAG'     # flag for tracking child/parent process
+CHILD = _FLAG in os.environ         # True w/in child process
+PARENT = not CHILD                  # True w/in parent process
+EX_TEMPFAIL = 75                    # child's exit code to trigger restart
 
 
-def _look_for_changes():
+def _look_for_changes():
     """See if any of our available modules have changed on the filesystem.
+
+    This function is run in a daemon thread. When this function returns, the
+    thread dies, and that is the signal to restart the process.
+
     """
 
     mtimes = {}
+
+    def has_changed(filename):
+        """Given a filename, return True or False.
+        """
+
+        # The file may have been removed from the filesystem.
+        # ===================================================
+
+        if not os.path.isfile(filename):
+            if filename in mtimes:
+                return True # trigger restart
+
+
+        # Or not, in which case, check the mod time.
+        # ==========================================
+
+        mtime = os.stat(filename).st_mtime
+        if filename not in mtimes: # first time we've seen it
+            mtimes[filename] = mtime
+        if mtime > mtimes[filename]:
+            return True # trigger restart
+        else:
+            # We haven't seen the file before. It has been probably
+            # loaded from a zip (egg) archive.
+            pass
+
+        return False
+
+
     while 1:
-        for module in sys.modules.values():
-
-            # Get out early if we can.
-            # ========================
-
-            filename = getattr(module, '__file__', None)
-            if filename is None:
+        for module in sys.modules.values():                 # module files
+            filepath = getattr(module, '__file__', None)
+            if filepath is None:
                 continue
-            if filename.endswith(".pyc"):
-                filename = filename[:-1]
-
-
-            # The file may have been removed from the filesystem.
-            # ===================================================
-
-            if not os.path.isfile(filename):
-                if filename in mtimes:
-                    return # trigger restart
-
-
-            # Or not, in which case, check the mod time.
-            # ==========================================
-
-            mtime = os.stat(filename).st_mtime
-            if filename not in mtimes: # first time we've seen it
-                mtimes[filename] = mtime
+            if ('.zip' + os.sep) in filepath: # zipimport
                 continue
-            if mtime > mtimes[filename]:
-                return # trigger restart
+            filepath = filepath.endswith(".pyc") and filepath[:-1] or filepath
+            if has_changed(filepath):
+                return # triggers restart
+
+        for filepath in _FILES:                             # additional files
+            if has_changed(filepath):
+                return # triggers restart
 
         time.sleep(0.1)
 
@@ -140,7 +158,7 @@ if CHILD:
     _thread.start()
 
 
-# Public functions
+# Public functions
 # ================
 
 def launch_child():
@@ -167,44 +185,11 @@ def should_restart():
         return not _thread.isAlive()
 
 
-# Test
-# ====
-
-if __name__ == '__main__':
-    """Simple test.
-
-    Execute this module as a script, then change the value of bar in foo.py. You
-    should see 'restarting ...'  and then the new value of foo.bar.
-
-    """
-
-    if PARENT and os.path.isfile('foo.py'):
-        print 'test aborted: foo.py exists'
-        raise SystemExit
-
-    def main():
-        import foo
-        print foo.bar
-        while 1:
-            time.sleep(1)
-            if should_restart():
-                print "restarting ..."
-                raise SystemExit(75)
-
-    try:
-        if PARENT:
-            open('foo.py', 'w+').write("bar='Blah.'")
-            launch_child()
-        else:
-            main()
-
-    finally:
-        if PARENT:
-            os.remove('foo.py')
-            os.remove('foo.pyc')
+def track(filepath):
+    _FILES.append(filepath)
 
 
-# Legal
+# Legal
 # =====
 
 """
