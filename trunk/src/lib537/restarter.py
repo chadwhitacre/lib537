@@ -176,7 +176,7 @@ if CHILD:
 # ================
 
 def launch_child():
-    """Keep relaunching the child until it doesn't exit with EX_TEMPFAIL.
+    """Keep relaunching the child until it exits 0.
     """
     if not _HAVE_SUBPROCESS:
         raise NotImplementedError("You do not have the subprocess module.")
@@ -188,8 +188,12 @@ def launch_child():
     new_env[_FLAG] = 'foo'
     while 1:
         retcode = subprocess.call(args, env=new_env)
-        if retcode != 75:
-            raise SystemExit(retcode)
+        if retcode == 75:   # child wants restart
+            continue
+        elif retcode > 0:   # child erred; block until mods changed
+            _look_for_changes()
+        else:               # child exited successfully; propagate
+            raise SystemExit
 
 
 def should_restart():
