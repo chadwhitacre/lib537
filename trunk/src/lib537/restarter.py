@@ -1,8 +1,7 @@
-"""Implement a module reloading mechanism.
+"""Automatically restart your program when certain files change.
 
-This module solves the problem of refreshing Python modules in memory when the
-source files change, without manually restarting the program. There are two
-basic ways to solve this problem:
+This module primarily solves the problem of refreshing modules in memory when
+the source files change. There are two basic ways to solve this problem:
 
     1. Reload modules within a single process
     -----------------------------------------
@@ -21,7 +20,10 @@ basic ways to solve this problem:
     time of your program.
 
 
-This module implements the second solution. It provides the following members:
+This module implements the second solution, automatically tracking source files
+for all loaded modules, with the exception of those imported directly from a ZIP
+archive (via zipimport). This module can also track non-source files, such as
+configuration files. It provides the following members:
 
     CHILD, PARENT       These are booleans indicating whether the current
                         process is the parent or child.
@@ -33,12 +35,17 @@ This module implements the second solution. It provides the following members:
                         should be restarted. If called in the parent process,
                         it always returns False.
 
+    track(filepath)     Add <filepath> to the list of non-source files to track.
+                        If the file is removed or has its modtime changed, the
+                        program will restart.
+
 
 Our implementation uses a thread in the child process (started when the module
-is imported) to monitor all library source files. Your program is responsible
-for periodically calling should_restart, exiting with code 75 whenever it
-returns True (presumably after cleanly shutting down). Exit code 75 seemed
-appropriate to use because of its meaning on Unix systems:
+is imported) to monitor all library source files as well as those added with
+track. Your program is responsible for periodically calling should_restart,
+exiting with code 75 whenever it returns True (presumably after cleanly shutting
+down). Exit code 75 seems appropriate because of its meaning on Unix systems.
+E.g., from FreeBSD 6.1-RELEASE, /usr/include/sysexits.h:
 
     EX_TEMPFAIL -- temporary failure, indicating something that
     *              is not really an error.  In sendmail, this means
@@ -50,11 +57,18 @@ appropriate to use because of its meaning on Unix systems:
     -- /usr/include/sysexits.h, FreeBSD 6.1-RELEASE
 
 
+A modified file dependency is "not really an error," and the parent process is
+"invited to retry" launching the child program.
+
 Here's an example of what this looks like:
 
     import restarter
+    import foo # your module; change to trigger reloading
 
     def main():
+        # startup code here
+        restarter.watch('foo.conf') # your conf file; change to trigger
+                                    # reloading
         while 1:
             # program logic here
             if restarter.should_restart():
