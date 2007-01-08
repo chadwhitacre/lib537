@@ -113,7 +113,7 @@ EX_TEMPFAIL = 75                    # child's exit code to trigger restart
 def _look_for_changes():
     """See if any of our available modules have changed on the filesystem.
 
-    This function is run in a daemon thread. When this function returns, the
+    This function is run as a daemon thread. When this function returns, the
     thread dies, and that is the signal to restart the process.
 
     """
