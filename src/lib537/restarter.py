@@ -130,6 +130,10 @@ EX_TEMPFAIL = 75                    # child's exit code to trigger restart
         if not os.path.isfile(filename):
             if filename in mtimes:
                 return True # trigger restart
+            else:
+                # We haven't seen the file before. It has been probably
+                # loaded from a zip (egg) archive.
+                return False
 
 
         # Or not, in which case, check the mod time.
@@ -140,10 +144,7 @@ EX_TEMPFAIL = 75                    # child's exit code to trigger restart
             mtimes[filename] = mtime
         if mtime > mtimes[filename]:
             return True # trigger restart
-        else:
-            # We haven't seen the file before. It has been probably
-            # loaded from a zip (egg) archive.
-            pass
+
 
         return False
 
@@ -152,8 +153,6 @@ EX_TEMPFAIL = 75                    # child's exit code to trigger restart
         for module in sys.modules.values():                 # module files
             filepath = getattr(module, '__file__', None)
             if filepath is None:
-                continue
-            if ('.zip' + os.sep) in filepath: # zipimport
                 continue
             filepath = filepath.endswith(".pyc") and filepath[:-1] or filepath
             if has_changed(filepath):
@@ -190,8 +189,8 @@ def launch_child():
         retcode = subprocess.call(args, env=new_env)
         if retcode == 75:   # child wants restart
             continue
-        elif retcode > 0:   # child erred; block until mods changed
-            _look_for_changes()
+        elif retcode > 0:   # child erred; thrash until otherwise
+            time.sleep(2)
         else:               # child exited successfully; propagate
             raise SystemExit
 
