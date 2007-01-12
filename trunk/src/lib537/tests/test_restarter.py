@@ -161,6 +161,7 @@ else:
         os.remove(join('fsfix', 'foo.pyc'))
     create_zip_archive()
 
+
     if 0: # use this to debug the subprocess
         proc = subprocess.Popen([sys.executable, join('fsfix', 'script')])
         proc.communicate()
@@ -184,5 +185,6 @@ else:
     expected = 'Blah.' + os.linesep
     actual = proc.stdout.readline()
     assert actual == expected, actual
+
 
 attach_rm(globals(), 'test_')
