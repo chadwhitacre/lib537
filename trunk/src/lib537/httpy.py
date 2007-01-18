@@ -102,7 +102,7 @@ class Responder(object):
             raise
 
         if isinstance(response, Response):
-            response = response(start_response)
+            response = response(environ, start_response)
         elif isinstance(response, basestring):
             response = Response(200, response)
             response.headers['Content-Type'] = 'text/html'
